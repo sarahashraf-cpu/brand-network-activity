@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Associative Network — MKTG 5307</title>
+<style>
+  :root{
+    --paper: #F7F5F0;
+    --ink: #1E1B16;
+    --ink-soft: #5C564B;
+    --line: #D8D2C4;
+    --accent: #2F4F3F;
+    --accent-soft: #E4ECE6;
+    --pos: #2F6B4F;
+    --pos-bg: #E4F1E9;
+    --pos-border: #9CC7AE;
+    --neg: #A13D2C;
+    --neg-bg: #F6E6E1;
+    --neg-border: #DDA491;
+  }
+  * { box-sizing: border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+  header{ border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  .kicker{ font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12.5px; letter-spacing: 0.02em; color: var(--ink-soft); margin: 0 0 8px; }
+  h1{ font-size: 30px; margin: 0 0 10px; font-weight: 400; line-height:1.2; }
+  .intro{ font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 14.5px; color: var(--ink-soft); line-height: 1.6; max-width: 640px; }
+  .intro b{ color: var(--ink); font-weight: 600; }
+
+  .controls-row{ display:flex; align-items:center; gap:14px; margin: 26px 0 8px; flex-wrap: wrap; font-family: 'Helvetica Neue', Arial, sans-serif; }
+  select{
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px; padding: 9px 12px; border-radius: 6px; border: 1px solid var(--line);
+    background: white; color: var(--ink); cursor:pointer;
+  }
+  .instructions{ font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: var(--ink-soft); margin: 0 0 24px; line-height: 1.6; max-width: 640px; }
+
+  #stage{ position:relative; width:100%; max-width:560px; aspect-ratio: 1/1; margin: 0 auto; }
+  svg#lines{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+  #nodes{ position:absolute; top:0; left:0; width:100%; height:100%; }
+
+  #brandnode{
+    position:absolute; border-radius:50%; background: var(--accent); color: white;
+    display:flex; align-items:center; justify-content:center;
+    font-family: 'Helvetica Neue', Arial, sans-serif; font-weight:600; font-size:14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15); transition: transform 0.3s;
+  }
+
+  .node{
+    position:absolute; cursor:pointer; padding:9px 7px; border-radius:9px;
+    font-family: 'Helvetica Neue', Arial, sans-serif; font-size:11.5px; line-height:1.3;
+    min-height:34px; display:flex; align-items:center; justify-content:center; text-align:center;
+    transition: transform 0.25s, background 0.2s, border-color 0.2s;
+    background: white; border: 1px solid var(--line); color: var(--ink-soft);
+  }
+  .node.linked.pos{ background: var(--pos-bg); border-color: var(--pos-border); color: var(--pos); }
+  .node.linked.neg{ background: var(--neg-bg); border-color: var(--neg-border); color: var(--neg); }
+
+  .node-controls{ display:flex; justify-content:center; gap:10px; margin-top:4px; font-family: 'Helvetica Neue', Arial, sans-serif; font-size:11px; }
+  .node-controls span{ cursor:pointer; color: var(--ink-soft); }
+  .node-controls span:hover{ color: var(--ink); }
+
+  .btn-row{ display:flex; gap:10px; justify-content:center; margin-top: 22px; flex-wrap: wrap; font-family: 'Helvetica Neue', Arial, sans-serif; }
+  button{
+    font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13.5px; padding: 10px 18px;
+    border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: white; cursor: pointer;
+  }
+  button.secondary{ background: white; color: var(--accent); }
+  button:hover{ opacity: 0.9; }
+
+  #summary{ max-width: 560px; margin: 20px auto 0; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; text-align:left; }
+  #summary b{ color: var(--ink); }
+
+  footer{ margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--line); font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; color: var(--ink-soft); }
+
+  @media (max-width: 600px){
+    .node{ font-size: 10.5px; padding: 7px 5px; }
+    h1{ font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">MKTG 5307 — Strategic Brand Management</p>
+    <h1>The Associative Network Memory Model</h1>
+    <p class="intro">Brand knowledge lives in memory as a network of linked nodes. Build a brand's network below by linking associations, setting how <b>strong</b> each link is and whether it's <b>favorable</b>, then run activation to see which associations surface first — and which barely register at all.</p>
+  </header>
+
+  <div class="controls-row">
+    <label for="brandSelect" style="font-size:13.5px;color:var(--ink-soft);">Brand:</label>
+    <select id="brandSelect"></select>
+  </div>
+  <p class="instructions">Click a node to link it to the brand. Once linked, use the controls beneath it to cycle strength (weak / medium / strong) and toggle favorability (+ / −). Then run activation.</p>
+
+  <div id="stage">
+    <svg id="lines"></svg>
+    <div id="nodes"></div>
+  </div>
+
+  <div class="btn-row">
+    <button id="run">Run Activation</button>
+    <button id="reveal" class="secondary">Compare to Reference Data</button>
+    <button id="reset" class="secondary">Reset</button>
+  </div>
+
+  <div id="summary"></div>
+
+  <footer>Built for in-class or async use — no login required. Refresh to start a new session.</footer>
+</div>
+
+<script>
+// ---- Brand data sets. Add a new brand by adding another entry here. ----
+const BRANDS = {
+  "LEGO": [
+    {label:"Creativity", strengthRef:3, favRef:true},
+    {label:"Danish heritage", strengthRef:1, favRef:true},
+    {label:"Builds STEM skills", strengthRef:2, favRef:true},
+    {label:"Expensive per set", strengthRef:2, favRef:false},
+    {label:"Painful to step on", strengthRef:2, favRef:false},
+    {label:"Star Wars/Marvel sets", strengthRef:3, favRef:true},
+    {label:"Adult collectors (AFOLs)", strengthRef:1, favRef:true},
+    {label:"Childhood nostalgia", strengthRef:3, favRef:true},
+    {label:"Family bonding time", strengthRef:2, favRef:true},
+    {label:"Eco-friendly materials push", strengthRef:1, favRef:true}
+  ],
+  "IKEA": [
+    {label:"Swedish heritage", strengthRef:2, favRef:true},
+    {label:"Affordable prices", strengthRef:3, favRef:true},
+    {label:"Confusing self-assembly", strengthRef:3, favRef:false},
+    {label:"Meatballs / food court", strengthRef:3, favRef:true},
+    {label:"Maze-like store layout", strengthRef:2, favRef:false},
+    {label:"Minimalist design", strengthRef:2, favRef:true},
+    {label:"Sustainability initiatives", strengthRef:1, favRef:true},
+    {label:"Weekend family outing", strengthRef:2, favRef:true},
+    {label:"Hard-to-pronounce product names", strengthRef:2, favRef:false},
+    {label:"Small-space living solutions", strengthRef:2, favRef:true}
+  ]
+};
+
+const select = document.getElementById('brandSelect');
+Object.keys(BRANDS).forEach(name => {
+  const opt = document.createElement('option');
+  opt.value = name; opt.textContent = name;
+  select.appendChild(opt);
+});
+
+let currentBrand = Object.keys(BRANDS)[0];
+let items = [];
+let state = {};
+let revealed = false;
+
+function sDots(s){ return s===1?"•":s===2?"••":"•••"; }
+function sWidth(s){ return s===1?2:s===2?4:7; }
+function sDelay(s){ return s===1?1400:s===2?800:250; }
+
+function loadBrand(name){
+  currentBrand = name;
+  const stageSize = document.getElementById('stage').clientWidth;
+  const cx = stageSize/2, cy = stageSize/2, R = stageSize*0.375;
+  items = BRANDS[name].map((it, i) => {
+    const angle = (Math.PI*2*i/BRANDS[name].length) - Math.PI/2;
+    return { ...it, id:i, x: cx + R*Math.cos(angle), y: cy + R*Math.sin(angle) };
+  });
+  state = {};
+  items.forEach(it => state[it.id] = {linked:false, strength:2, favorable:true});
+  document.getElementById('summary').innerHTML = '';
+  revealed = false;
+  render(cx, cy);
+}
+
+function render(cx, cy){
+  const nodesDiv = document.getElementById('nodes');
+  const svg = document.getElementById('lines');
+  const stageSize = document.getElementById('stage').clientWidth;
+  svg.setAttribute('viewBox', '0 0 ' + stageSize + ' ' + stageSize);
+  nodesDiv.innerHTML = '';
+  svg.innerHTML = '';
+
+  const brand = document.createElement('div');
+  brand.id = 'brandnode';
+  brand.textContent = currentBrand;
+  const bSize = stageSize*0.135;
+  brand.style.left = (cx - bSize/2) + 'px';
+  brand.style.top = (cy - bSize/2) + 'px';
+  brand.style.width = bSize + 'px';
+  brand.style.height = bSize + 'px';
+  nodesDiv.appendChild(brand);
+
+  items.forEach(it => {
+    const s = state[it.id];
+    if(s.linked){
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+      line.setAttribute('x2', it.x); line.setAttribute('y2', it.y);
+      line.setAttribute('stroke', s.favorable ? 'var(--pos)' : 'var(--neg)');
+      line.setAttribute('stroke-width', sWidth(s.strength));
+      line.setAttribute('id', 'line-'+it.id);
+      line.setAttribute('opacity', '0.5');
+      svg.appendChild(line);
+    }
+
+    const wrap = document.createElement('div');
+    const wrapW = stageSize*0.207;
+    wrap.style.position = 'absolute';
+    wrap.style.left = (it.x - wrapW/2) + 'px';
+    wrap.style.top = (it.y - stageSize*0.053) + 'px';
+    wrap.style.width = wrapW + 'px';
+    wrap.style.textAlign = 'center';
+
+    const node = document.createElement('div');
+    node.id = 'node-'+it.id;
+    node.className = 'node' + (s.linked ? (' linked ' + (s.favorable ? 'pos' : 'neg')) : '');
+    node.textContent = it.label;
+    node.onclick = () => { s.linked = !s.linked; render(cx, cy); };
+    wrap.appendChild(node);
+
+    if(s.linked){
+      const controls = document.createElement('div');
+      controls.className = 'node-controls';
+      const strBtn = document.createElement('span');
+      strBtn.textContent = 'strength: ' + sDots(s.strength);
+      strBtn.onclick = (e) => { e.stopPropagation(); s.strength = s.strength === 3 ? 1 : s.strength+1; render(cx, cy); };
+      const favBtn = document.createElement('span');
+      favBtn.textContent = s.favorable ? '+' : '\u2013';
+      favBtn.style.fontWeight = '700';
+      favBtn.onclick = (e) => { e.stopPropagation(); s.favorable = !s.favorable; render(cx, cy); };
+      controls.appendChild(strBtn);
+      controls.appendChild(favBtn);
+      wrap.appendChild(controls);
+    }
+    nodesDiv.appendChild(wrap);
+  });
+}
+
+document.getElementById('run').onclick = () => {
+  const linked = items.filter(it => state[it.id].linked);
+  if(linked.length === 0){ document.getElementById('summary').textContent = 'Link at least one association first.'; return; }
+  const brand = document.getElementById('brandnode');
+  brand.style.transform = 'scale(1.15)';
+  setTimeout(()=> brand.style.transform = 'scale(1)', 300);
+
+  linked.forEach(it => {
+    const s = state[it.id];
+    setTimeout(() => {
+      const node = document.getElementById('node-'+it.id);
+      const line = document.getElementById('line-'+it.id);
+      if(node){ node.style.transform = 'scale(1.15)'; setTimeout(()=>node.style.transform='scale(1)', 400); }
+      if(line){ line.setAttribute('opacity','1'); }
+    }, sDelay(s.strength));
+  });
+
+  setTimeout(() => {
+    const strongCount = linked.filter(it=>state[it.id].strength===3).length;
+    const weakCount = linked.filter(it=>state[it.id].strength===1).length;
+    const negCount = linked.filter(it=>!state[it.id].favorable).length;
+    document.getElementById('summary').innerHTML =
+      '<b>Activation order (fastest to slowest):</b> ' + linked.slice().sort((a,b)=>state[b.id].strength-state[a.id].strength).map(it=>it.label).join(' \u2192 ') +
+      '<br><br>You built a network with ' + strongCount + ' strong link(s), ' + weakCount + ' weak link(s), and ' + negCount + ' negative association(s). ' +
+      (weakCount > 0 ? 'Weak links may not activate at all under real-world time pressure. ' : '') +
+      (negCount > 0 ? 'Negative associations still activate alongside positive ones — they compete for attention rather than canceling out.' : '');
+  }, 1900);
+};
+
+document.getElementById('reveal').onclick = () => {
+  revealed = !revealed;
+  const summary = document.getElementById('summary');
+  if(revealed){
+    summary.innerHTML = '<b>Illustrative reference (based on general perception patterns for ' + currentBrand + '):</b><br>' +
+      items.map(it => it.label + ' — strength ' + sDots(it.strengthRef) + ', ' + (it.favRef ? 'positive' : 'negative')).join('<br>') +
+      '<br><br>Compare this to your own network — where did your rating diverge from typical consumer perception, and why?';
+  } else {
+    summary.textContent = '';
+  }
+};
+
+document.getElementById('reset').onclick = () => loadBrand(currentBrand);
+select.onchange = (e) => loadBrand(e.target.value);
+window.addEventListener('resize', () => loadBrand(currentBrand));
+
+loadBrand(currentBrand);
+</script>
+</body>
+</html>
